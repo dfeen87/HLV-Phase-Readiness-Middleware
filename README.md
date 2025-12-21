@@ -65,6 +65,13 @@ Traditional control systems often:
 
 This layer exists **between** sensing and decision-making, not below or above them.
 
+## Theoretical Foundation
+
+Theoretical work within the Helix-Light-Vortex framework suggests that physical properties themselves may emerge from dynamic phase and information flow. While this middleware does not model such mechanisms, it is motivated by the same principle: system response depends on state, history, and phase context rather than instantaneous inputs alone.
+
+Recent work in protected quantum buffering and detector physics further highlights that system interaction must respect phase-dependent stability windows. While this middleware does not model such mechanisms, it is motivated by the same constraint: timing determines whether interaction preserves or destroys coherence.
+
+
 ## Core Concept: Phase Readiness
 
 **Phase readiness** measures whether incremental energy input is likely to:
@@ -196,8 +203,6 @@ MIT License — permissive, transparent, and intended for both research and prod
 ## Final Note
 
 **Timing is a physical property, not just a scheduling concern.**
-
-Theoretical work within the Helix-Light-Vortex framework suggests that physical properties themselves may emerge from dynamic phase and information flow. While this middleware does not model such mechanisms, it is motivated by the same principle: system response depends on state, history, and phase context rather than instantaneous inputs alone.
 
 By making phase readiness explicit, this middleware gives higher-level systems the opportunity to act with:
 - restraint
