@@ -14,9 +14,9 @@
 // - Does NOT replace medical judgment
 // - Does NOT define treatment protocols
 // - Does NOT introduce autonomous decision-making
+// All time values are seconds; temperatures are degrees Celsius
 
 #include <cstdint>
-#include <cmath>
 #include <limits>
 
 namespace hlv {
