@@ -197,6 +197,8 @@ MIT License — permissive, transparent, and intended for both research and prod
 
 **Timing is a physical property, not just a scheduling concern.**
 
+Theoretical work within the Helix-Light-Vortex framework suggests that physical properties themselves may emerge from dynamic phase and information flow. While this middleware does not model such mechanisms, it is motivated by the same principle: system response depends on state, history, and phase context rather than instantaneous inputs alone.
+
 By making phase readiness explicit, this middleware gives higher-level systems the opportunity to act with:
 - restraint
 - intelligence
