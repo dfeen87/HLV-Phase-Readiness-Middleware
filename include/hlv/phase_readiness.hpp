@@ -17,7 +17,7 @@
 
 #include <cstdint>
 #include <cmath>
-#include <string>
+#include <limits>
 
 namespace hlv {
 
@@ -42,15 +42,15 @@ struct PhaseSignals final {
   double t_s = 0.0;  // monotonic timestamp (seconds)
                      // Non-monotonic updates trigger FLAG_STALE_OR_NONMONO
   
-  double temp_C = NAN;         // absolute temperature (or thermal proxy)
-  double temp_ambient_C = NAN; // optional ambient reference, can be NAN
+  double temp_C = std::numeric_limits<double>::quiet_NaN();         // absolute temperature (or thermal proxy)
+  double temp_ambient_C = std::numeric_limits<double>::quiet_NaN(); // optional ambient reference
   
-  // Optional externally supplied indicators (can be NAN if not available)
-  double hysteresis_index = NAN; // e.g., 0..1 (higher = more hysteresis)
+  // Optional externally supplied indicators (can be NaN if not available)
+  double hysteresis_index = std::numeric_limits<double>::quiet_NaN(); // e.g., 0..1 (higher = more hysteresis)
   
-  double coherence_index = NAN;  // e.g., 0..1 (phase coherence, paper Section 3)
-                                 // Higher = more stable/coherent
-                                 // Can represent ΔΦ or other stability metrics
+  double coherence_index = std::numeric_limits<double>::quiet_NaN();  // e.g., 0..1 (phase coherence, paper Section 3)
+                                                                       // Higher = more stable/coherent
+                                                                       // Can represent ΔΦ or other stability metrics
   
   // Data quality
   bool valid = false;  // telemetry validity from upstream
@@ -99,6 +99,9 @@ struct PhaseReadinessConfig final {
   // Derivative limits (eligibility constraint)
   double max_abs_dTdt_C_per_s = 0.25; // e.g. 0.25 °C/s
   
+  // Sensor glitch detection (defensive validation)
+  double max_abs_temp_jump_C = 5.0;   // maximum plausible temperature jump between samples
+  
   // Persistence logic (short memory, deterministic)
   double ewma_alpha = 0.2;            // bounded smoothing for trend
   double persistence_s = 3.0;         // how long "trend" must persist to matter
@@ -114,6 +117,9 @@ struct PhaseReadinessConfig final {
 // Phase Readiness Middleware (paper Section 5, Figure 1)
 // Architectural Position: Between sensing and actuation layers
 // Role: Deterministic gating, NOT parameter optimization or control
+//
+// Safety-critical, deterministic eligibility gate.
+// Stateless w.r.t. actuation; stateful only for short-term history.
 //
 // System Architecture (paper Figure 1):
 //   [ Sensors / Telemetry ]
