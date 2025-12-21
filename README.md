@@ -67,11 +67,9 @@ This layer exists **between** sensing and decision-making, not below or above th
 
 ## Theoretical Foundation
 
-Theoretical work within the Helix-Light-Vortex framework suggests that physical properties themselves may emerge from dynamic phase and information flow. While this middleware does not model such mechanisms, it is motivated by the same principle: system response depends on state, history, and phase context rather than instantaneous inputs alone.
+Across multiple independent research domains—including the Helix-Light-Vortex framework, protected quantum buffering, detector physics, and closed-loop neurostimulation—there is growing convergence on a shared principle: system response to energy or interaction depends on dynamic state, history, and phase context, not on instantaneous inputs alone.
 
-Recent work in protected quantum buffering and detector physics further highlights that system interaction must respect phase-dependent stability windows. While this middleware does not model such mechanisms, it is motivated by the same constraint: timing determines whether interaction preserves or destroys coherence.
-
-
+While HLV Phase Readiness does not model the underlying physical, quantum, or biological mechanisms described in these works, it is motivated by the same constraint they expose—timing determines whether interaction stabilizes a system or accelerates degradation. This convergence reinforces the architectural necessity of a deterministic, domain-agnostic middleware layer that evaluates state eligibility independently of control, optimization, or therapeutic intent.
 ## Core Concept: Phase Readiness
 
 **Phase readiness** measures whether incremental energy input is likely to:
