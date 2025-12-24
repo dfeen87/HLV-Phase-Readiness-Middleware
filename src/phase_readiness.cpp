@@ -85,8 +85,16 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
     return fail_safe(FLAG_STALE_OR_NONMONO);
   }
 
-  // Step 3b: Sensor glitch guard
-  if (std::fabs(in.temp_C - prev_temp_C_) > cfg_.max_abs_temp_jump_C) {
+  const bool temp_out_of_range =
+      (in.temp_C < cfg_.temp_min_C || in.temp_C > cfg_.temp_max_C);
+  if (temp_out_of_range) {
+    out.flags |= FLAG_TEMP_OUT_OF_RANGE;
+  }
+
+  // Step 3b: Sensor glitch guard (only for larger sample intervals)
+  const double glitch_dt_threshold = cfg_.max_dt_s * 0.5;
+  if (dt >= glitch_dt_threshold &&
+      std::fabs(in.temp_C - prev_temp_C_) > cfg_.max_abs_temp_jump_C) {
     return fail_safe(FLAG_INPUT_INVALID);
   }
 
@@ -114,10 +122,6 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
   prev_temp_C_ = in.temp_C;
 
   // Step 7: Apply eligibility constraints
-  if (in.temp_C < cfg_.temp_min_C || in.temp_C > cfg_.temp_max_C) {
-    out.flags |= FLAG_TEMP_OUT_OF_RANGE;
-  }
-
   if (std::fabs(out.dTdt_C_per_s) > cfg_.max_abs_dTdt_C_per_s) {
     out.flags |= FLAG_GRADIENT_TOO_HIGH;
   }
@@ -144,7 +148,7 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
   double readiness = 1.0;
 
   if (out.flags & FLAG_TEMP_OUT_OF_RANGE)  readiness -= 0.60;
-  if (out.flags & FLAG_GRADIENT_TOO_HIGH)  readiness -= 0.50;
+  if (out.flags & FLAG_GRADIENT_TOO_HIGH)  readiness -= 0.60;
   if (out.flags & FLAG_HYSTERESIS_HIGH)    readiness -= 0.70;
   if (out.flags & FLAG_COHERENCE_LOW)      readiness -= 0.30;
   if (out.flags & FLAG_PERSISTENT_HEATING) readiness -= 0.20;
