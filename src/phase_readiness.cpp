@@ -68,7 +68,13 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
     has_prev_ = true;
     prev_t_s_ = in.t_s;
     prev_temp_C_ = in.temp_C;
-    return fail_safe(FLAG_STALE_OR_NONMONO);
+    out.readiness = 0.40;
+    out.gate = Gate::CAUTION;
+    out.flags |= FLAG_STALE_OR_NONMONO;
+    out.dTdt_C_per_s = 0.0;
+    out.trend_C = 0.0;
+    out.stability_score = out.readiness;
+    return out;
   }
 
   // Step 3: Temporal validation
@@ -79,9 +85,6 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
   }
   
   if (dt > cfg_.max_dt_s) {
-    has_prev_ = true;
-    prev_t_s_ = in.t_s;
-    prev_temp_C_ = in.temp_C;
     return fail_safe(FLAG_STALE_OR_NONMONO);
   }
 
@@ -167,6 +170,8 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
       (out.flags & FLAG_HYSTERESIS_HIGH);
 
   if (critical_violation) {
+    out.readiness = 0.0;
+    out.stability_score = 0.0;
     out.gate = Gate::BLOCK;
   }
 
