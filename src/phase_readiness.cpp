@@ -68,12 +68,13 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
     has_prev_ = true;
     prev_t_s_ = in.t_s;
     prev_temp_C_ = in.temp_C;
-    out.readiness = 0.40;
-    out.gate = Gate::CAUTION;
+    out.readiness = 0.0;
+    out.gate = Gate::BLOCK;
     out.flags |= FLAG_STALE_OR_NONMONO;
+    out.flags |= FLAG_FAILSAFE_DEFAULT;
     out.dTdt_C_per_s = 0.0;
     out.trend_C = 0.0;
-    out.stability_score = out.readiness;
+    out.stability_score = 0.0;
     return out;
   }
 
