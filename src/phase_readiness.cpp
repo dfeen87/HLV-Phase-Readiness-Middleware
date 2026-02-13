@@ -112,7 +112,7 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
   const bool sign_consistent =
       (trend_dTdt_ > 0.0 && out.dTdt_C_per_s > 0.0) ||
       (trend_dTdt_ < 0.0 && out.dTdt_C_per_s < 0.0) ||
-      (trend_dTdt_ == 0.0 && out.dTdt_C_per_s == 0.0);
+      (std::fabs(trend_dTdt_) < 1e-9 && std::fabs(out.dTdt_C_per_s) < 1e-9);
 
   if (sign_consistent) {
     trend_age_s_ += dt;

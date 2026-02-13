@@ -299,7 +299,7 @@ static void test_multiple_penalties_multiplicative() {
   // With multiplicative penalties, readiness should be 1.0 * 0.70 = 0.70
   // Which maps to CAUTION (0.40-0.80 range)
   assert(out.flags & FLAG_COHERENCE_LOW);
-  assert(out.readiness >= 0.65 && out.readiness <= 0.75); // Around 0.70
+  assert(std::fabs(out.readiness - 0.70) < 0.01); // Close to 0.70
   assert(out.gate == Gate::CAUTION);
 }
 
