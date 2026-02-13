@@ -110,8 +110,9 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
   trend_dTdt_ = alpha * out.dTdt_C_per_s + (1.0 - alpha) * trend_dTdt_;
 
   const bool sign_consistent =
-      (trend_dTdt_ >= 0.0 && out.dTdt_C_per_s >= 0.0) ||
-      (trend_dTdt_ < 0.0 && out.dTdt_C_per_s < 0.0);
+      (trend_dTdt_ > 0.0 && out.dTdt_C_per_s > 0.0) ||
+      (trend_dTdt_ < 0.0 && out.dTdt_C_per_s < 0.0) ||
+      (std::fabs(trend_dTdt_) < 1e-9 && std::fabs(out.dTdt_C_per_s) < 1e-9);
 
   if (sign_consistent) {
     trend_age_s_ += dt;
@@ -151,15 +152,14 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
   // Step 8: Compute readiness score (deterministic penalties)
   double readiness = 1.0;
 
-  if (out.flags & FLAG_TEMP_OUT_OF_RANGE)  readiness -= 0.60;
-  if (out.flags & FLAG_GRADIENT_TOO_HIGH)  readiness -= 0.60;
-  if (out.flags & FLAG_HYSTERESIS_HIGH)    readiness -= 0.70;
-  if (out.flags & FLAG_COHERENCE_LOW)      readiness -= 0.30;
-  if (out.flags & FLAG_PERSISTENT_HEATING) readiness -= 0.20;
-  if (out.flags & FLAG_PERSISTENT_COOLING) readiness -= 0.10;
+  if (out.flags & FLAG_TEMP_OUT_OF_RANGE)  readiness *= 0.40;
+  if (out.flags & FLAG_GRADIENT_TOO_HIGH)  readiness *= 0.40;
+  if (out.flags & FLAG_HYSTERESIS_HIGH)    readiness *= 0.30;
+  if (out.flags & FLAG_COHERENCE_LOW)      readiness *= 0.70;
+  if (out.flags & FLAG_PERSISTENT_HEATING) readiness *= 0.80;
+  if (out.flags & FLAG_PERSISTENT_COOLING) readiness *= 0.90;
 
   out.readiness = clamp01(readiness);
-  out.stability_score = out.readiness;
 
   // Step 9: Map to discrete gate
   out.gate = gate_from_readiness(out.readiness);
@@ -172,9 +172,11 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
 
   if (critical_violation) {
     out.readiness = 0.0;
-    out.stability_score = 0.0;
     out.gate = Gate::BLOCK;
   }
+
+  // Set stability_score after safety override to ensure consistency
+  out.stability_score = out.readiness;
 
   return out;
 }
