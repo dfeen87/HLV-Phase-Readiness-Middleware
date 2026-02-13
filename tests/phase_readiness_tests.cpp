@@ -262,6 +262,71 @@ static void test_nan_optional_indicators() {
 }
 
 // -----------------------------------------------------------------------------
+// Test 15: Bug fix - Zero crossing behavior (sign consistency)
+// -----------------------------------------------------------------------------
+static void test_zero_crossing_sign_consistency() {
+  PhaseReadinessConfig cfg;
+  cfg.persistence_s = 1.0;
+  PhaseReadinessMiddleware mw(cfg);
+
+  // Establish baseline
+  mw.evaluate(make_valid_signal(0.0, 20.0));
+  
+  // Exactly zero gradient (no temperature change)
+  mw.evaluate(make_valid_signal(0.3, 20.0));
+  mw.evaluate(make_valid_signal(0.6, 20.0));
+  
+  // Transition to heating
+  auto out = mw.evaluate(make_valid_signal(0.9, 20.05));
+  
+  // Should NOT have persistent heating flag yet (trend just started)
+  assert(!(out.flags & FLAG_PERSISTENT_HEATING));
+}
+
+// -----------------------------------------------------------------------------
+// Test 16: Bug fix - Multiple penalty flags (multiplicative not additive)
+// -----------------------------------------------------------------------------
+static void test_multiple_penalties_multiplicative() {
+  PhaseReadinessMiddleware mw(PhaseReadinessConfig{});
+
+  mw.evaluate(make_valid_signal(0.0, 25.0));
+
+  PhaseSignals s = make_valid_signal(0.5, 25.0);
+  s.coherence_index = 0.1;  // Low coherence (0.70 multiplier)
+  
+  auto out = mw.evaluate(s);
+  
+  // With multiplicative penalties, readiness should be 1.0 * 0.70 = 0.70
+  // Which maps to CAUTION (0.40-0.80 range)
+  assert(out.flags & FLAG_COHERENCE_LOW);
+  assert(out.readiness >= 0.65 && out.readiness <= 0.75); // Around 0.70
+  assert(out.gate == Gate::CAUTION);
+}
+
+// -----------------------------------------------------------------------------
+// Test 17: Bug fix - Stability score consistency with safety override
+// -----------------------------------------------------------------------------
+static void test_stability_score_consistency() {
+  PhaseReadinessMiddleware mw(PhaseReadinessConfig{});
+
+  mw.evaluate(make_valid_signal(0.0, 25.0));
+  
+  // Create a critical violation (high hysteresis)
+  PhaseSignals s = make_valid_signal(0.5, 25.0);
+  s.hysteresis_index = 0.9;
+  
+  auto out = mw.evaluate(s);
+  
+  // After safety override, both readiness and stability_score should be 0.0
+  assert(out.readiness == 0.0);
+  assert(out.stability_score == 0.0);
+  assert(out.gate == Gate::BLOCK);
+  
+  // They should always be equal after evaluation
+  assert(out.readiness == out.stability_score);
+}
+
+// -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
 int main() {
@@ -281,6 +346,9 @@ int main() {
   test_reset();
   test_persistent_heating();
   test_nan_optional_indicators();
+  test_zero_crossing_sign_consistency();
+  test_multiple_penalties_multiplicative();
+  test_stability_score_consistency();
 
   std::cout << "[PASS] All Phase Readiness Middleware tests passed!\n";
   return 0;
