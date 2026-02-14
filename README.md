@@ -126,6 +126,26 @@ Implementations may expose readiness as:
 
 The middleware **never decides what action to take** — only whether the timing is favorable.
 
+## REST API for Observability
+
+The middleware includes a read-only HTTP/JSON REST API for observability and monitoring:
+
+- **Strictly read-only:** GET endpoints only, no control surfaces
+- **Thread-safe:** Dedicated server thread with mutex-protected data access
+- **Non-blocking:** Does not interfere with readiness inference loop
+- **LAN-accessible:** Binds to 0.0.0.0:8080 by default
+
+### Available Endpoints
+
+- `GET /health` — Service health check
+- `GET /api/readiness` — Current readiness value and gate state
+- `GET /api/thermal` — Thermal state and gradients
+- `GET /api/history` — Timestamped readiness history
+- `GET /api/phase_context` — Phase boundary proximity and hysteresis
+- `GET /api/diagnostics` — Detailed system diagnostics with flag breakdown
+
+See [REST_API.md](REST_API.md) for complete documentation and usage examples.
+
 ## Intended Use Cases
 
 Although domain-agnostic by design, this middleware naturally applies to:
@@ -197,6 +217,61 @@ Initial focus:
 - preventing overreach
 
 Functionality will grow slowly and deliberately.
+
+## Building and Testing
+
+### Prerequisites
+
+- C++17 compatible compiler (g++ 7.0+ or clang++ 5.0+)
+- POSIX-compliant system (Linux, macOS, BSD)
+- pthread support for REST API server
+
+### Building the Examples
+
+```bash
+# Build the core library tests
+g++ -std=c++17 -I include -o phase_readiness_tests \
+    tests/phase_readiness_tests.cpp src/phase_readiness.cpp
+
+# Build REST API tests
+g++ -std=c++17 -I include -pthread -o rest_api_tests \
+    tests/rest_api_tests.cpp src/phase_readiness.cpp src/rest_api_server.cpp
+
+# Build API server example
+g++ -std=c++17 -I include -pthread -o api_server_example \
+    examples/api_server_example.cpp src/phase_readiness.cpp src/rest_api_server.cpp
+
+# Build API client example
+g++ -std=c++17 -I include -o api_client_example \
+    examples/api_client_example.cpp
+```
+
+### Running Tests
+
+```bash
+# Run core middleware tests
+./phase_readiness_tests
+
+# Run REST API tests
+./rest_api_tests
+```
+
+### Running the REST API Server
+
+```bash
+# Start the example server (binds to 0.0.0.0:8080)
+./api_server_example
+
+# In another terminal, test the API
+curl http://localhost:8080/health
+curl http://localhost:8080/api/readiness
+curl http://localhost:8080/api/thermal
+
+# Or use the example client
+./api_client_example localhost 8080
+```
+
+See [REST_API.md](REST_API.md) for complete API documentation.
 
 ## License
 
