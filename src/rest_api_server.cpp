@@ -330,8 +330,20 @@ std::string RestAPIServer::handleThermal() {
   std::ostringstream json;
   json << std::fixed << std::setprecision(6);
   json << "{\n";
-  json << "  \"temperature_C\": " << (std::isfinite(snapshot.temp_C) ? std::to_string(snapshot.temp_C) : "null") << ",\n";
-  json << "  \"ambient_C\": " << (std::isfinite(snapshot.temp_ambient_C) ? std::to_string(snapshot.temp_ambient_C) : "null") << ",\n";
+  
+  // Handle potentially NaN values
+  if (std::isfinite(snapshot.temp_C)) {
+    json << "  \"temperature_C\": " << snapshot.temp_C << ",\n";
+  } else {
+    json << "  \"temperature_C\": null,\n";
+  }
+  
+  if (std::isfinite(snapshot.temp_ambient_C)) {
+    json << "  \"ambient_C\": " << snapshot.temp_ambient_C << ",\n";
+  } else {
+    json << "  \"ambient_C\": null,\n";
+  }
+  
   json << "  \"gradient_C_per_s\": " << snapshot.dTdt_C_per_s << ",\n";
   json << "  \"trend_C\": " << snapshot.trend_C << ",\n";
   json << "  \"timestamp_s\": " << snapshot.t_s << "\n";
@@ -354,7 +366,13 @@ std::string RestAPIServer::handleHistory() {
     json << "      \"timestamp_s\": " << s.t_s << ",\n";
     json << "      \"readiness\": " << s.readiness << ",\n";
     json << "      \"gate\": \"" << gateToString(s.gate) << "\",\n";
-    json << "      \"temperature_C\": " << (std::isfinite(s.temp_C) ? std::to_string(s.temp_C) : "null") << ",\n";
+    
+    if (std::isfinite(s.temp_C)) {
+      json << "      \"temperature_C\": " << s.temp_C << ",\n";
+    } else {
+      json << "      \"temperature_C\": null,\n";
+    }
+    
     json << "      \"gradient_C_per_s\": " << s.dTdt_C_per_s << "\n";
     json << "    }";
     if (i < history.size() - 1) {
@@ -374,8 +392,19 @@ std::string RestAPIServer::handlePhaseContext() {
   std::ostringstream json;
   json << std::fixed << std::setprecision(6);
   json << "{\n";
-  json << "  \"hysteresis_index\": " << (std::isfinite(snapshot.hysteresis_index) ? std::to_string(snapshot.hysteresis_index) : "null") << ",\n";
-  json << "  \"coherence_index\": " << (std::isfinite(snapshot.coherence_index) ? std::to_string(snapshot.coherence_index) : "null") << ",\n";
+  
+  if (std::isfinite(snapshot.hysteresis_index)) {
+    json << "  \"hysteresis_index\": " << snapshot.hysteresis_index << ",\n";
+  } else {
+    json << "  \"hysteresis_index\": null,\n";
+  }
+  
+  if (std::isfinite(snapshot.coherence_index)) {
+    json << "  \"coherence_index\": " << snapshot.coherence_index << ",\n";
+  } else {
+    json << "  \"coherence_index\": null,\n";
+  }
+  
   json << "  \"gradient_persistence\": " << snapshot.trend_C << ",\n";
   json << "  \"gate\": \"" << gateToString(snapshot.gate) << "\",\n";
   json << "  \"timestamp_s\": " << snapshot.t_s << "\n";
