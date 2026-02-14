@@ -1,1 +1,6 @@
 _codeql_detected_source_root
+test_build
+*.o
+build/
+api_server_example
+api_client_example
