@@ -275,7 +275,7 @@ See [REST_API.md](REST_API.md) for complete API documentation.
 
 ## License
 
-MIT License
+MIT License - see [`LICENSE`](LICENSE) file.
 
 ## Acknowledgments
 
