@@ -275,7 +275,11 @@ See [REST_API.md](REST_API.md) for complete API documentation.
 
 ## License
 
-MIT License — permissive, transparent, and intended for both research and production exploration.
+MIT License
+
+## Acknowledgments
+
+This project was developed with a combination of original ideas and math, hands‑on coding, and support from advanced AI systems. I would like to acknowledge **Microsoft Copilot**, **OpenAI ChatGPT** and **Anthropic Claude**, for their meaningful assistance in refining concepts, improving clarity, and strengthening the overall quality of this work.
 
 ## Final Note
 
