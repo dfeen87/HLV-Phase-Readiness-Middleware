@@ -274,8 +274,9 @@ curl http://localhost:8080/api/thermal
 See [REST_API.md](REST_API.md) for complete API documentation.
 
 ## License
+This project is available for **non‑commercial use only** under the terms of the included LICENSE file.  
+Commercial use requires a separate paid license.
 
-MIT License - see [`LICENSE`](LICENSE) file.
 
 ## Acknowledgments
 
