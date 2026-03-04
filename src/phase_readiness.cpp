@@ -5,15 +5,67 @@
 
 namespace hlv {
 
+// Config validation
+bool PhaseReadinessMiddleware::validate(const PhaseReadinessConfig& cfg) {
+  if (!std::isfinite(cfg.temp_min_C) || !std::isfinite(cfg.temp_max_C) ||
+      cfg.temp_min_C >= cfg.temp_max_C) return false;
+  if (!std::isfinite(cfg.max_dt_s) || cfg.max_dt_s <= 0.0) return false;
+  if (!std::isfinite(cfg.max_abs_dTdt_C_per_s) || cfg.max_abs_dTdt_C_per_s <= 0.0) return false;
+  if (!std::isfinite(cfg.max_abs_temp_jump_C) || cfg.max_abs_temp_jump_C <= 0.0) return false;
+  if (!std::isfinite(cfg.ewma_alpha) || cfg.ewma_alpha <= 0.0 || cfg.ewma_alpha > 1.0) return false;
+  if (!std::isfinite(cfg.persistence_s) || cfg.persistence_s <= 0.0) return false;
+  if (!std::isfinite(cfg.hysteresis_block_threshold) ||
+      cfg.hysteresis_block_threshold < 0.0 || cfg.hysteresis_block_threshold > 1.0) return false;
+  if (!std::isfinite(cfg.coherence_allow_threshold) ||
+      cfg.coherence_allow_threshold < 0.0 || cfg.coherence_allow_threshold > 1.0) return false;
+  if (!std::isfinite(cfg.gate_allow_threshold) || !std::isfinite(cfg.gate_caution_threshold) ||
+      cfg.gate_caution_threshold <= 0.0 ||
+      cfg.gate_allow_threshold <= cfg.gate_caution_threshold ||
+      cfg.gate_allow_threshold > 1.0) return false;
+  return true;
+}
+
 // Constructor
 PhaseReadinessMiddleware::PhaseReadinessMiddleware(PhaseReadinessConfig cfg)
-    : cfg_(cfg)
-    , has_prev_(false)
+    : has_prev_(false)
     , prev_t_s_(0.0)
     , prev_temp_C_(std::numeric_limits<double>::quiet_NaN())
     , trend_dTdt_(0.0)
     , trend_age_s_(0.0)
-{}
+    , config_valid_(validate(cfg))
+{
+  if (!config_valid_) {
+    // Clamp/correct to safe defaults to ensure deterministic behavior
+    if (!std::isfinite(cfg.temp_min_C)) cfg.temp_min_C = -20.0;
+    if (!std::isfinite(cfg.temp_max_C)) cfg.temp_max_C = 60.0;
+    if (cfg.temp_min_C >= cfg.temp_max_C) { cfg.temp_min_C = -20.0; cfg.temp_max_C = 60.0; }
+    if (!std::isfinite(cfg.max_dt_s) || cfg.max_dt_s <= 0.0) cfg.max_dt_s = 1.0;
+    if (!std::isfinite(cfg.max_abs_dTdt_C_per_s) || cfg.max_abs_dTdt_C_per_s <= 0.0)
+      cfg.max_abs_dTdt_C_per_s = 0.25;
+    if (!std::isfinite(cfg.max_abs_temp_jump_C) || cfg.max_abs_temp_jump_C <= 0.0)
+      cfg.max_abs_temp_jump_C = 5.0;
+    if (!std::isfinite(cfg.ewma_alpha) || cfg.ewma_alpha <= 0.0 || cfg.ewma_alpha > 1.0)
+      cfg.ewma_alpha = 0.2;
+    if (!std::isfinite(cfg.persistence_s) || cfg.persistence_s <= 0.0) cfg.persistence_s = 3.0;
+    if (!std::isfinite(cfg.hysteresis_block_threshold) ||
+        cfg.hysteresis_block_threshold < 0.0 || cfg.hysteresis_block_threshold > 1.0)
+      cfg.hysteresis_block_threshold = 0.85;
+    if (!std::isfinite(cfg.coherence_allow_threshold) ||
+        cfg.coherence_allow_threshold < 0.0 || cfg.coherence_allow_threshold > 1.0)
+      cfg.coherence_allow_threshold = 0.35;
+    if (!std::isfinite(cfg.gate_allow_threshold) ||
+        cfg.gate_allow_threshold <= 0.0 || cfg.gate_allow_threshold > 1.0)
+      cfg.gate_allow_threshold = 0.80;
+    if (!std::isfinite(cfg.gate_caution_threshold) || cfg.gate_caution_threshold <= 0.0 ||
+        cfg.gate_caution_threshold >= cfg.gate_allow_threshold)
+      cfg.gate_caution_threshold = 0.40;
+  }
+  cfg_ = cfg;
+}
+
+bool PhaseReadinessMiddleware::configValid() const {
+  return config_valid_;
+}
 
 // Reset to initial fail-safe state
 void PhaseReadinessMiddleware::reset() {
@@ -34,11 +86,21 @@ double PhaseReadinessMiddleware::clamp01(double x) {
   return x < 0.0 ? 0.0 : (x > 1.0 ? 1.0 : x);
 }
 
-// Deterministic mapping: readiness → gate
-static Gate gate_from_readiness(double r) {
-  if (r >= 0.80) return Gate::ALLOW;
-  if (r >= 0.40) return Gate::CAUTION;
+// Deterministic mapping: readiness → gate (uses configurable thresholds)
+Gate PhaseReadinessMiddleware::gate_from_readiness(double r) const {
+  if (r >= cfg_.gate_allow_threshold) return Gate::ALLOW;
+  if (r >= cfg_.gate_caution_threshold) return Gate::CAUTION;
   return Gate::BLOCK;
+}
+
+// General-purpose gate string conversion
+const char* gateToString(Gate g) {
+  switch (g) {
+    case Gate::BLOCK:   return "BLOCK";
+    case Gate::CAUTION: return "CAUTION";
+    case Gate::ALLOW:   return "ALLOW";
+    default:            return "UNKNOWN";
+  }
 }
 
 // Core evaluation: deterministic readiness inference
@@ -116,6 +178,9 @@ PhaseReadinessOutput PhaseReadinessMiddleware::evaluate(const PhaseSignals& in) 
 
   if (sign_consistent) {
     trend_age_s_ += dt;
+    // Clamp to prevent precision loss in very long-running systems
+    const double max_trend_age = 2.0 * cfg_.persistence_s;
+    if (trend_age_s_ > max_trend_age) trend_age_s_ = max_trend_age;
   } else {
     trend_age_s_ = 0.0;
   }

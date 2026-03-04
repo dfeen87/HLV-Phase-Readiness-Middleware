@@ -22,18 +22,18 @@ namespace hlv {
 
 // Timestamped snapshot for history tracking
 struct ReadinessSnapshot {
-  std::chrono::steady_clock::time_point timestamp;
-  double t_s;
-  double readiness;
-  Gate gate;
-  uint32_t flags;
-  double temp_C;
-  double temp_ambient_C;
-  double dTdt_C_per_s;
-  double trend_C;
-  double stability_score;
-  double hysteresis_index;
-  double coherence_index;
+  std::chrono::steady_clock::time_point timestamp{};
+  double t_s = 0.0;
+  double readiness = 0.0;
+  Gate gate = Gate::BLOCK;
+  uint32_t flags = 0;
+  double temp_C = std::numeric_limits<double>::quiet_NaN();
+  double temp_ambient_C = std::numeric_limits<double>::quiet_NaN();
+  double dTdt_C_per_s = 0.0;
+  double trend_C = 0.0;
+  double stability_score = 0.0;
+  double hysteresis_index = std::numeric_limits<double>::quiet_NaN();
+  double coherence_index = std::numeric_limits<double>::quiet_NaN();
 };
 
 // Thread-safe shared state for API server
@@ -62,7 +62,6 @@ private:
 struct RestAPIConfig {
   std::string bind_address = "0.0.0.0";
   uint16_t port = 8080;
-  size_t max_history_size = 100;
   int listen_backlog = 10;
   int socket_timeout_ms = 5000;
 };
@@ -120,8 +119,10 @@ private:
   std::string makeJsonError(int code, const std::string& message);
   
   // Utility
-  static std::string gateToString(Gate g);
+  static std::string jsonEscape(const std::string& s);
+  static void writeJsonDouble(std::ostringstream& json, const char* key, double value, bool comma = true);
   static std::string formatTimestamp(const std::chrono::steady_clock::time_point& tp);
+  bool sendAll(int sock, const std::string& data);
 };
 
 } // namespace hlv

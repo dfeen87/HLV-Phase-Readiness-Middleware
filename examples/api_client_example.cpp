@@ -6,6 +6,7 @@
 #include <iostream>
 #include <netinet/in.h>
 #include <sstream>
+#include <stdexcept>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -79,7 +80,19 @@ int main(int argc, char* argv[]) {
     host = argv[1];
   }
   if (argc > 2) {
-    port = std::stoi(argv[2]);
+    try {
+      int p = std::stoi(argv[2]);
+      if (p < 1 || p > 65535) {
+        std::cerr << "Error: port must be between 1 and 65535\n";
+        std::cerr << "Usage: " << argv[0] << " [host] [port]\n";
+        return 1;
+      }
+      port = p;
+    } catch (const std::exception&) {
+      std::cerr << "Error: invalid port '" << argv[2] << "'\n";
+      std::cerr << "Usage: " << argv[0] << " [host] [port]\n";
+      return 1;
+    }
   }
   
   std::cout << "HLV Phase Readiness REST API Client Example\n";

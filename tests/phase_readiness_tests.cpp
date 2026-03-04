@@ -327,8 +327,69 @@ static void test_stability_score_consistency() {
 }
 
 // -----------------------------------------------------------------------------
-// Main
+// Test 18: Config validation
 // -----------------------------------------------------------------------------
+static void test_config_validation() {
+  // Default config should be valid
+  assert(PhaseReadinessMiddleware::validate(PhaseReadinessConfig{}));
+
+  // Inverted temperature range
+  PhaseReadinessConfig bad_temp;
+  bad_temp.temp_min_C = 60.0;
+  bad_temp.temp_max_C = -20.0;
+  assert(!PhaseReadinessMiddleware::validate(bad_temp));
+
+  // Zero max_dt_s
+  PhaseReadinessConfig bad_dt;
+  bad_dt.max_dt_s = 0.0;
+  assert(!PhaseReadinessMiddleware::validate(bad_dt));
+
+  // Negative ewma_alpha
+  PhaseReadinessConfig bad_alpha;
+  bad_alpha.ewma_alpha = -0.1;
+  assert(!PhaseReadinessMiddleware::validate(bad_alpha));
+
+  // ewma_alpha > 1
+  PhaseReadinessConfig bad_alpha2;
+  bad_alpha2.ewma_alpha = 1.5;
+  assert(!PhaseReadinessMiddleware::validate(bad_alpha2));
+
+  // NaN in persistence_s
+  PhaseReadinessConfig bad_nan;
+  bad_nan.persistence_s = std::numeric_limits<double>::quiet_NaN();
+  assert(!PhaseReadinessMiddleware::validate(bad_nan));
+
+  // Constructor with invalid config succeeds and sets configValid() false
+  PhaseReadinessMiddleware mw(bad_temp);
+  assert(!mw.configValid());
+
+  // Constructor with valid config sets configValid() true
+  PhaseReadinessMiddleware mw2(PhaseReadinessConfig{});
+  assert(mw2.configValid());
+}
+
+// -----------------------------------------------------------------------------
+// Test 19: Gate threshold configurability
+// -----------------------------------------------------------------------------
+static void test_gate_threshold_configurability() {
+  // Lower gate_allow_threshold so readiness of 0.5 → ALLOW
+  PhaseReadinessConfig cfg_low;
+  cfg_low.gate_allow_threshold = 0.45;
+  cfg_low.gate_caution_threshold = 0.20;
+  PhaseReadinessMiddleware mw_low(cfg_low);
+
+  mw_low.evaluate(make_valid_signal(0.0, 25.0));
+  PhaseSignals s = make_valid_signal(0.5, 25.0);
+  s.coherence_index = 0.1; // Applies 0.70 penalty → readiness = 0.70 > 0.45 → ALLOW
+  auto out_low = mw_low.evaluate(s);
+  assert(out_low.gate == Gate::ALLOW);
+
+  // Default config: same conditions → CAUTION (0.70 < 0.80)
+  PhaseReadinessMiddleware mw_def(PhaseReadinessConfig{});
+  mw_def.evaluate(make_valid_signal(0.0, 25.0));
+  auto out_def = mw_def.evaluate(s);
+  assert(out_def.gate == Gate::CAUTION);
+}
 int main() {
   std::cout << "Running Phase Readiness Middleware tests...\n";
 
@@ -349,6 +410,8 @@ int main() {
   test_zero_crossing_sign_consistency();
   test_multiple_penalties_multiplicative();
   test_stability_score_consistency();
+  test_config_validation();
+  test_gate_threshold_configurability();
 
   std::cout << "[PASS] All Phase Readiness Middleware tests passed!\n";
   return 0;

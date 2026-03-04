@@ -214,6 +214,35 @@ static void test_nan_handling() {
   assert(!std::isnan(snapshot.temp_C)); // This should be valid
 }
 
+// Test 7: setMaxHistorySize(0) minimum enforcement
+static void test_max_history_size_min_enforcement() {
+  ReadinessAPIState state;
+  state.setMaxHistorySize(0); // Should be clamped to 1
+  
+  PhaseSignals signals;
+  signals.t_s = 1.0;
+  signals.temp_C = 25.0;
+  signals.valid = true;
+  
+  PhaseReadinessOutput output;
+  output.readiness = 0.5;
+  output.gate = Gate::CAUTION;
+  output.flags = FLAG_NONE;
+  
+  state.update(signals, output);
+  
+  // Should retain exactly 1 entry (minimum history size enforced)
+  auto history = state.getHistory(100);
+  assert(history.size() == 1);
+  
+  // Adding a second entry should displace the first
+  signals.t_s = 2.0;
+  state.update(signals, output);
+  history = state.getHistory(100);
+  assert(history.size() == 1);
+  assert(history.back().t_s == 2.0);
+}
+
 int main() {
   std::cout << "Running REST API tests...\n";
   
@@ -234,6 +263,9 @@ int main() {
   
   test_nan_handling();
   std::cout << "[PASS] NaN handling\n";
+  
+  test_max_history_size_min_enforcement();
+  std::cout << "[PASS] setMaxHistorySize(0) minimum enforcement\n";
   
   std::cout << "\n[PASS] All REST API tests passed!\n";
   
