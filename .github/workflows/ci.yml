@@ -19,3 +19,10 @@ jobs:
 
       - name: Run tests
         run: ./build/phase_readiness_tests
+
+      - name: Build REST API tests
+        run: |
+          g++ -std=c++17 -Iinclude -pthread tests/rest_api_tests.cpp src/phase_readiness.cpp src/rest_api_server.cpp -o build/rest_api_tests
+
+      - name: Run REST API tests
+        run: ./build/rest_api_tests

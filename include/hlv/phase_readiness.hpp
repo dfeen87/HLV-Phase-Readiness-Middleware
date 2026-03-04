@@ -21,6 +21,9 @@
 
 namespace hlv {
 
+// Version constant (paper release tag)
+constexpr const char* HLV_VERSION = "2.1.0";
+
 // Gate implements deterministic state logic (paper Figure 2, Section 6):
 // - BLOCK (R≈0): unstable/undefined, actuation blocked
 // - ALLOW (R≈1): eligible for energy delivery
@@ -79,6 +82,8 @@ struct PhaseReadinessConfig final {
   double hysteresis_block_threshold = 0.85;
   double coherence_allow_threshold  = 0.35;
   double max_dt_s = 1.0;
+  double gate_allow_threshold = 0.80;
+  double gate_caution_threshold = 0.40;
 };
 
 // Phase Readiness Middleware (paper Section 5, Figure 1)
@@ -91,6 +96,12 @@ public:
   void reset();
   PhaseReadinessOutput evaluate(const PhaseSignals& in);
 
+  // Config validation: returns true iff all fields are in valid ranges
+  static bool validate(const PhaseReadinessConfig& cfg);
+
+  // Returns false if the config passed at construction was invalid
+  bool configValid() const;
+
 private:
   PhaseReadinessConfig cfg_;
   bool   has_prev_;
@@ -98,9 +109,14 @@ private:
   double prev_temp_C_;
   double trend_dTdt_;
   double trend_age_s_;
+  bool   config_valid_;
   
   static bool is_finite(double x);
   static double clamp01(double x);
+  Gate gate_from_readiness(double r) const;
 };
+
+// General-purpose gate string conversion (free function in hlv namespace)
+const char* gateToString(Gate g);
 
 } // namespace hlv

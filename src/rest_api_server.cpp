@@ -2,6 +2,7 @@
 
 #include <arpa/inet.h>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <errno.h>
 #include <iomanip>
@@ -81,7 +82,7 @@ std::vector<ReadinessSnapshot> ReadinessAPIState::getHistory(size_t max_count) c
 
 void ReadinessAPIState::setMaxHistorySize(size_t size) {
   std::lock_guard<std::mutex> lock(mutex_);
-  max_history_size_ = size;
+  max_history_size_ = std::max(size, size_t(1));
   
   // Trim if needed
   while (history_.size() > max_history_size_) {
@@ -167,19 +168,17 @@ bool RestAPIServer::start() {
 }
 
 void RestAPIServer::stop() {
-  if (!running_.load()) {
-    return;
-  }
-  
   should_stop_.store(true);
   
-  if (server_thread_.joinable()) {
-    server_thread_.join();
-  }
-  
+  // Close socket first to unblock accept()
   if (server_socket_ >= 0) {
     close(server_socket_);
     server_socket_ = -1;
+  }
+  
+  // Join thread if it was ever started
+  if (server_thread_.joinable()) {
+    server_thread_.join();
   }
   
   running_.store(false);
@@ -232,7 +231,16 @@ void RestAPIServer::handleClient(int client_socket) {
     std::string response = makeHttpResponse(400, "Bad Request", 
                                            makeJsonError(400, "Invalid HTTP request"),
                                            "application/json");
-    send(client_socket, response.c_str(), response.length(), 0);
+    sendAll(client_socket, response);
+    return;
+  }
+  
+  // Enforce max path length (414 URI Too Long)
+  if (parsed.path.length() > 256) {
+    std::string response = makeHttpResponse(414, "URI Too Long",
+                                           makeJsonError(414, "URI too long"),
+                                           "application/json");
+    sendAll(client_socket, response);
     return;
   }
   
@@ -241,7 +249,7 @@ void RestAPIServer::handleClient(int client_socket) {
     std::string response = makeHttpResponse(405, "Method Not Allowed",
                                            makeJsonError(405, "Only GET requests are allowed"),
                                            "application/json");
-    send(client_socket, response.c_str(), response.length(), 0);
+    sendAll(client_socket, response);
     return;
   }
   
@@ -275,7 +283,7 @@ void RestAPIServer::handleClient(int client_socket) {
   }
   
   std::string response = makeHttpResponse(status_code, status_text, body, "application/json");
-  send(client_socket, response.c_str(), response.length(), 0);
+  sendAll(client_socket, response);
 }
 
 bool RestAPIServer::parseRequest(const std::string& request, HttpRequest& parsed) {
@@ -296,6 +304,17 @@ bool RestAPIServer::parseRequest(const std::string& request, HttpRequest& parsed
     return false;
   }
   
+  // Validate HTTP version
+  if (parsed.version.size() < 5 || parsed.version.substr(0, 5) != "HTTP/") {
+    return false;
+  }
+  
+  // Strip query string
+  size_t query_pos = parsed.path.find('?');
+  if (query_pos != std::string::npos) {
+    parsed.path = parsed.path.substr(0, query_pos);
+  }
+  
   return true;
 }
 
@@ -304,7 +323,7 @@ std::string RestAPIServer::handleHealth() {
   json << "{\n";
   json << "  \"status\": \"ok\",\n";
   json << "  \"service\": \"HLV Phase Readiness Middleware\",\n";
-  json << "  \"version\": \"1.0.0\"\n";
+  json << "  \"version\": \"" << HLV_VERSION << "\"\n";
   json << "}";
   return json.str();
 }
@@ -330,23 +349,11 @@ std::string RestAPIServer::handleThermal() {
   std::ostringstream json;
   json << std::fixed << std::setprecision(6);
   json << "{\n";
-  
-  // Handle potentially NaN values
-  if (std::isfinite(snapshot.temp_C)) {
-    json << "  \"temperature_C\": " << snapshot.temp_C << ",\n";
-  } else {
-    json << "  \"temperature_C\": null,\n";
-  }
-  
-  if (std::isfinite(snapshot.temp_ambient_C)) {
-    json << "  \"ambient_C\": " << snapshot.temp_ambient_C << ",\n";
-  } else {
-    json << "  \"ambient_C\": null,\n";
-  }
-  
-  json << "  \"gradient_C_per_s\": " << snapshot.dTdt_C_per_s << ",\n";
-  json << "  \"trend_C\": " << snapshot.trend_C << ",\n";
-  json << "  \"timestamp_s\": " << snapshot.t_s << "\n";
+  writeJsonDouble(json, "temperature_C", snapshot.temp_C);
+  writeJsonDouble(json, "ambient_C", snapshot.temp_ambient_C);
+  writeJsonDouble(json, "gradient_C_per_s", snapshot.dTdt_C_per_s);
+  writeJsonDouble(json, "trend_C", snapshot.trend_C);
+  writeJsonDouble(json, "timestamp_s", snapshot.t_s, false);
   json << "}";
   return json.str();
 }
@@ -392,22 +399,11 @@ std::string RestAPIServer::handlePhaseContext() {
   std::ostringstream json;
   json << std::fixed << std::setprecision(6);
   json << "{\n";
-  
-  if (std::isfinite(snapshot.hysteresis_index)) {
-    json << "  \"hysteresis_index\": " << snapshot.hysteresis_index << ",\n";
-  } else {
-    json << "  \"hysteresis_index\": null,\n";
-  }
-  
-  if (std::isfinite(snapshot.coherence_index)) {
-    json << "  \"coherence_index\": " << snapshot.coherence_index << ",\n";
-  } else {
-    json << "  \"coherence_index\": null,\n";
-  }
-  
-  json << "  \"gradient_persistence\": " << snapshot.trend_C << ",\n";
+  writeJsonDouble(json, "hysteresis_index", snapshot.hysteresis_index);
+  writeJsonDouble(json, "coherence_index", snapshot.coherence_index);
+  writeJsonDouble(json, "gradient_persistence", snapshot.trend_C);
   json << "  \"gate\": \"" << gateToString(snapshot.gate) << "\",\n";
-  json << "  \"timestamp_s\": " << snapshot.t_s << "\n";
+  writeJsonDouble(json, "timestamp_s", snapshot.t_s, false);
   json << "}";
   return json.str();
 }
@@ -445,6 +441,8 @@ std::string RestAPIServer::makeHttpResponse(int status_code, const std::string& 
   response << "Content-Type: " << content_type << "\r\n";
   response << "Content-Length: " << body.length() << "\r\n";
   response << "Connection: close\r\n";
+  response << "X-Content-Type-Options: nosniff\r\n";
+  response << "Cache-Control: no-store\r\n";
   response << "\r\n";
   response << body;
   return response.str();
@@ -455,19 +453,59 @@ std::string RestAPIServer::makeJsonError(int code, const std::string& message) {
   json << "{\n";
   json << "  \"error\": {\n";
   json << "    \"code\": " << code << ",\n";
-  json << "    \"message\": \"" << message << "\"\n";
+  json << "    \"message\": \"" << jsonEscape(message) << "\"\n";
   json << "  }\n";
   json << "}";
   return json.str();
 }
 
-std::string RestAPIServer::gateToString(Gate g) {
-  switch (g) {
-    case Gate::BLOCK: return "BLOCK";
-    case Gate::CAUTION: return "CAUTION";
-    case Gate::ALLOW: return "ALLOW";
-    default: return "UNKNOWN";
+std::string RestAPIServer::jsonEscape(const std::string& s) {
+  std::string result;
+  result.reserve(s.size());
+  for (unsigned char c : s) {
+    switch (c) {
+      case '"':  result += "\\\""; break;
+      case '\\': result += "\\\\"; break;
+      case '\n': result += "\\n";  break;
+      case '\r': result += "\\r";  break;
+      case '\t': result += "\\t";  break;
+      case '\b': result += "\\b";  break;
+      case '\f': result += "\\f";  break;
+      default:
+        if (c < 0x20) {
+          char buf[8];
+          std::snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned int>(c));
+          result += buf;
+        } else {
+          result += static_cast<char>(c);
+        }
+        break;
+    }
   }
+  return result;
+}
+
+void RestAPIServer::writeJsonDouble(std::ostringstream& json, const char* key, double value, bool comma) {
+  json << "  \"" << key << "\": ";
+  if (std::isfinite(value)) {
+    json << value;
+  } else {
+    json << "null";
+  }
+  if (comma) json << ",";
+  json << "\n";
+}
+
+bool RestAPIServer::sendAll(int sock, const std::string& data) {
+  const char* ptr = data.c_str();
+  size_t remaining = data.size();
+  while (remaining > 0) {
+    ssize_t sent = send(sock, ptr, remaining, 0);
+    if (sent < 0) return false;
+    ptr += sent;
+    remaining -= static_cast<size_t>(sent);
+  }
+  return true;
 }
 
 std::string RestAPIServer::formatTimestamp(const std::chrono::steady_clock::time_point& tp) {
