@@ -450,7 +450,7 @@ done
 
 ## License
 
-MIT License - See LICENSE file for details.
+Non-Commercial - See LICENSE file for details.
 
 ---
 
