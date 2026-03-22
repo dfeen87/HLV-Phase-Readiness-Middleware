@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Don Michael Feeney Jr. All rights reserved.
+// Non-commercial use only. See LICENSE for terms.
+// Commercial use requires a separate paid license: dfeen87@gmail.com
+
 // Example server demonstrating HLV Phase Readiness REST API
 // This example simulates a readiness inference loop and exposes the data via REST API
 

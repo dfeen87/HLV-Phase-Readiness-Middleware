@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Don Michael Feeney Jr. All rights reserved.
+// Non-commercial use only. See LICENSE for terms.
+// Commercial use requires a separate paid license: dfeen87@gmail.com
+
 #pragma once
 
 // Read-only HTTP/JSON REST API for HLV Phase Readiness Middleware

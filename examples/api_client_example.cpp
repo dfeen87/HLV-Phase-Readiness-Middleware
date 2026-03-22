@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Don Michael Feeney Jr. All rights reserved.
+// Non-commercial use only. See LICENSE for terms.
+// Commercial use requires a separate paid license: dfeen87@gmail.com
+
 // Example HTTP client for HLV Phase Readiness REST API
 // Demonstrates how to query the API endpoints
 
