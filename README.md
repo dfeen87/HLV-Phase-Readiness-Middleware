@@ -2,6 +2,32 @@
 
 **Deterministic, phase-aware readiness inference for energy-coupled physical systems**
 
+[![Version](https://img.shields.io/badge/version-2.1.1-blue.svg)](https://github.com/dfeen87/HLV-Phase-Readiness-Middleware)
+[![License](https://img.shields.io/badge/license-Non--Commercial-orange.svg)](LICENSE)
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-brightgreen.svg)](https://en.cppreference.com/w/cpp/17)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20BSD-lightgrey.svg)](README.md)
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Why This Exists](#why-this-exists)
+- [Design Philosophy](#design-philosophy)
+- [Theoretical Foundation](#theoretical-foundation)
+- [Core Concept: Phase Readiness](#core-concept-phase-readiness)
+- [Architectural Position](#architectural-position)
+- [Intended Outputs](#intended-outputs)
+- [REST API for Observability](#rest-api-for-observability)
+- [Intended Use Cases](#intended-use-cases)
+- [Non-Goals](#non-goals-very-important)
+- [Determinism & Trust](#determinism--trust)
+- [Building and Testing](#building-and-testing)
+  - [Prerequisites](#prerequisites)
+  - [Building](#building)
+  - [Running Tests](#running-tests)
+  - [Running the REST API Server](#running-the-rest-api-server)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+
 ## Overview
 
 HLV Phase Readiness is a lightweight middleware layer that infers when a physical system is receptive to energy input, based on thermal state, temporal gradients, and proximity to phase boundaries.
@@ -71,8 +97,7 @@ Across multiple independent research domains—including the Helix-Light-Vortex 
 
 While HLV Phase Readiness does not model the underlying physical, quantum, or biological mechanisms described in these works, it is motivated by the same constraint they expose—timing determines whether interaction stabilizes a system or accelerates degradation. This convergence reinforces the architectural necessity of a deterministic, domain-agnostic middleware layer that evaluates state eligibility independently of control, optimization, or therapeutic intent.
 
-📄 Foundational Architecture: See WHITEPAPER.md
-for the full deterministic phase-readiness middleware design and safety rationale
+📄 See [WHITEPAPER.md](WHITEPAPER.md) for the full deterministic phase-readiness middleware design and safety rationale.
 
 ## Core Concept: Phase Readiness
 
@@ -226,7 +251,7 @@ Functionality will grow slowly and deliberately.
 - POSIX-compliant system (Linux, macOS, BSD)
 - pthread support for REST API server
 
-### Building the Examples
+### Building
 
 ```bash
 # Build the core library tests
@@ -274,8 +299,9 @@ curl http://localhost:8080/api/thermal
 See [REST_API.md](REST_API.md) for complete API documentation.
 
 ## License
-This project is available for **non‑commercial use only** under the terms of the included LICENSE file.  
-Commercial use requires a separate paid license.
+
+This project is available for **non-commercial use only** under the terms of the included [LICENSE](LICENSE) file.  
+Commercial use requires a separate paid license. Contact: dfeen87@gmail.com
 
 
 ## Acknowledgments

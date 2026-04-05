@@ -26,7 +26,7 @@
 namespace hlv {
 
 // Version constant (paper release tag)
-constexpr const char* HLV_VERSION = "2.1.0";
+constexpr const char* HLV_VERSION = "2.1.1";
 
 // Gate implements deterministic state logic (paper Figure 2, Section 6):
 // - BLOCK (R≈0): unstable/undefined, actuation blocked

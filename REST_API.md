@@ -1,6 +1,6 @@
 # HLV Phase Readiness Middleware REST API
 
-**Version:** 1.0.0  
+**Version:** 2.1.1  
 **Protocol:** HTTP/1.1  
 **Data Format:** JSON  
 **Access:** Read-only (GET endpoints only)
@@ -33,7 +33,7 @@ Health check endpoint for service monitoring.
 {
   "status": "ok",
   "service": "HLV Phase Readiness Middleware",
-  "version": "1.0.0"
+  "version": "2.1.1"
 }
 ```
 
@@ -352,7 +352,7 @@ api_server.stop();
 
 All API endpoints are thread-safe and can be queried concurrently. The `ReadinessAPIState` class uses mutexes to protect shared data:
 
-- **Lock-free reads:** Multiple API requests can read simultaneously
+- **Read-concurrent:** Multiple API requests can read simultaneously; mutex ensures consistency
 - **Safe updates:** Readiness loop updates are synchronized
 - **No blocking:** API server runs in dedicated thread
 
@@ -438,6 +438,11 @@ done
 ---
 
 ## Changelog
+
+### Version 2.1.1
+
+- Updated version to 2.1.1
+- Corrected thread-safety documentation (concurrent reads are mutex-protected)
 
 ### Version 1.0.0 (Initial Release)
 
