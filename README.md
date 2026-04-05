@@ -21,6 +21,10 @@
 - [Non-Goals](#non-goals-very-important)
 - [Determinism & Trust](#determinism--trust)
 - [Building and Testing](#building-and-testing)
+  - [Prerequisites](#prerequisites)
+  - [Building](#building)
+  - [Running Tests](#running-tests)
+  - [Running the REST API Server](#running-the-rest-api-server)
 - [License](#license)
 - [Acknowledgments](#acknowledgments)
 
