@@ -2,6 +2,7 @@
 
 **Deterministic, phase-aware readiness inference for energy-coupled physical systems**
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-2.1.1-blue.svg)](https://github.com/dfeen87/HLV-Phase-Readiness-Middleware)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-brightgreen.svg)](https://en.cppreference.com/w/cpp/17)
