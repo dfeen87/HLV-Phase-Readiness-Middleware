@@ -455,7 +455,7 @@ done
 
 ## License
 
-Non-Commercial - See LICENSE file for details.
+MIT License - See LICENSE file for details.
 
 ---
 

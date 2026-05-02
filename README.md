@@ -3,7 +3,7 @@
 **Deterministic, phase-aware readiness inference for energy-coupled physical systems**
 
 [![Version](https://img.shields.io/badge/version-2.1.1-blue.svg)](https://github.com/dfeen87/HLV-Phase-Readiness-Middleware)
-[![License](https://img.shields.io/badge/license-Non--Commercial-orange.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-brightgreen.svg)](https://en.cppreference.com/w/cpp/17)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20BSD-lightgrey.svg)](README.md)
 
@@ -27,6 +27,7 @@
   - [Running the REST API Server](#running-the-rest-api-server)
 - [License](#license)
 - [Acknowledgments](#acknowledgments)
+- [Enterprise Consulting & Integration](#enterprise-consulting--integration)
 
 ## Overview
 
@@ -300,13 +301,15 @@ See [REST_API.md](REST_API.md) for complete API documentation.
 
 ## License
 
-This project is available for **non-commercial use only** under the terms of the included [LICENSE](LICENSE) file.  
-Commercial use requires a separate paid license. Contact: dfeen87@gmail.com
+This project is fully open-source under the **MIT License**. See the included [LICENSE](LICENSE) file for details.
 
 
 ## Acknowledgments
 
 This project was developed with a combination of original ideas and math, hands‑on coding, and support from advanced AI systems. I would like to acknowledge **Microsoft Copilot**, **OpenAI ChatGPT** and **Anthropic Claude**, for their meaningful assistance in refining concepts, improving clarity, and strengthening the overall quality of this work.
+
+## Enterprise Consulting & Integration
+This architecture is fully open-source under the MIT License. If your organization requires custom scaling, proprietary integration, or dedicated technical consulting to deploy these models at an enterprise level, please reach out at: dfeen87@gmail.com
 
 ## Final Note
 
